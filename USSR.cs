@@ -1,10 +1,11 @@
-﻿using AssetsTools.NET;
+using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using Kiraio.UnityWebTools;
-using NativeFileDialogs.Net;
+using NativeFileDialogSharp;
 using Spectre.Console;
 using USSR.Enums;
 using USSR.Utilities;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace USSR.Core
 {
@@ -20,15 +21,8 @@ namespace USSR.Core
 
             while (true)
             {
-                PrintHelp();
-                Console.WriteLine();
-
                 string? ussrExec = Path.GetDirectoryName(AppContext.BaseDirectory);
-                string[] menuList = { "Remove Unity Splash Screen", "Remove Watermark", "Exit" };
-                int choiceIndex = GetPromptChoice(menuList);
-                if (choiceIndex == 2)
-                    return;
-                string? selectedFile = OpenFilePicker();
+                string? selectedFile = args[0];
 
                 if (selectedFile == null)
                     continue; // Prompt for action again
@@ -119,21 +113,10 @@ namespace USSR.Core
                             $"( INFO ) Unity Version: [bold green]{assetFileInstance.file.Metadata.UnityVersion}[/]"
                         );
 
-                        switch (choiceIndex)
-                        {
-                            case 0:
-                                assetFileInstance.file = RemoveSplashScreen(
-                                    assetsManager,
-                                    assetFileInstance
-                                );
-                                break;
-                            case 1:
-                                assetFileInstance.file = RemoveWatermark(
-                                    assetsManager,
-                                    assetFileInstance
-                                );
-                                break;
-                        }
+                        assetFileInstance.file = RemoveSplashScreen(
+                            assetsManager,
+                            assetFileInstance
+                        );
 
                         if (assetFileInstance.file != null)
                         {
@@ -229,11 +212,7 @@ namespace USSR.Core
                         }
                     }
                 }
-
-                AnsiConsole.WriteLine();
-                AnsiConsole.MarkupLine("Press any key to continue...");
-                Console.ReadKey();
-                Console.Clear();
+                System.Diagnostics.Process.GetCurrentProcess().Kill();
             }
         }
 
@@ -394,43 +373,27 @@ namespace USSR.Core
         /// Open file picker dialog.
         /// </summary>
         /// <returns>Selected file path.</returns>
-        static string? OpenFilePicker()
+        static string OpenFilePicker()
         {
-            try
-            {
-                AnsiConsole.MarkupLine("Opening File Picker...");
+            AnsiConsole.MarkupLine("Opening File Picker...");
 
-                NfdStatus filePicker = Nfd.OpenDialog(
-                    out string? path,
-                    new Dictionary<string, string>()
-                    {
-                        {
-                            "Unity Files",
-                            "globalgamemanagers,unity3d,data,data.br,data.gz,data.unityweb"
-                        },
-                    },
-                    Path.GetDirectoryName(Utility.GetLastOpenedFile())
-                );
+            DialogResult filePicker = Dialog.FileOpen(
+                null,
+                Path.GetDirectoryName(Utility.GetLastOpenedFile())
+            );
 
-                switch (filePicker)
-                {
-                    case NfdStatus.Cancelled:
-                        AnsiConsole.MarkupLine("Cancelled.");
-                        Console.Clear();
-                        return string.Empty;
-                    case NfdStatus.Ok:
-                        return path ?? string.Empty;
-                    default:
-                        return string.Empty;
-                }
-            }
-            catch (NfdException ex)
+            if (filePicker.IsCancelled)
+                AnsiConsole.MarkupLine("( INFO ) Cancelled.");
+            else if (filePicker.IsError)
             {
-                AnsiConsole.MarkupLineInterpolated(
-                    $"[red]( ERR! )[/] Unable to open File Picker! Try using a different Terminal?\n{ex.Message}"
+                AnsiConsole.MarkupLine(
+                    "[red]( ERR! )[/] Unable to open File Picker! Try using a different Terminal?"
                 );
-                return string.Empty;
             }
+
+            Console.WriteLine();
+
+            return filePicker.Path;
         }
 
         /// <summary>
@@ -686,8 +649,8 @@ namespace USSR.Core
 
                 AnsiConsole.Markup("Which splash screen you want to remove? ");
 
-                InputLogoIndex:
-                string? logoIndex = Console.ReadLine();
+            InputLogoIndex:
+                string? logoIndex = "1";
                 if (
                     !int.TryParse(
                         logoIndex,
