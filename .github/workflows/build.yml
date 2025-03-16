@@ -15,18 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dotnet-version: [ '8.0.x' ]
-        dotnet-framework: [ 'net8.0' ]
+        dotnet-version: [ '6.0.x', '8.0.x' ]
+        dotnet-framework: [ 'net6.0', 'net8.0' ]
         dotnet-runtime: [ 'win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64' ]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     - name: Setup .NET ${{ matrix.dotnet-version }}
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
     - name: Cache dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v3
       with:
         path: ~/.nuget/packages
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
@@ -46,7 +46,7 @@ jobs:
       run: cp classdata.tpk version.txt ${{ github.workspace }}/bin/Release/${{ matrix.dotnet-framework }}/${{ matrix.dotnet-runtime }}/publish/
       working-directory: ${{ github.workspace }}
     - name: Upload Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: USSR-${{ matrix.dotnet-framework }}-${{ matrix.dotnet-runtime }}-latest
         path: ${{ github.workspace }}/bin/Release/${{ matrix.dotnet-framework }}/${{ matrix.dotnet-runtime }}/publish/
