@@ -227,7 +227,7 @@ namespace USSR.Core
                         }
                     }
                 }
-                System.Diagnostics.Process.GetCurrentProcess().Kill();
+                Environment.Exit(0);
             }
         }
 
