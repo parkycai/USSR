@@ -8,11 +8,15 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AssetsTools.NET" Version="3.0.0" />
     <PackageReference Include="KaitaiStruct.Runtime.CSharp" Version="0.10.0" />
     <PackageReference Include="Kiraio.UnityWebTools.NET" Version="1.0.0" />
-    <PackageReference Include="NativeFileDialogSharp" Version="0.6.0-alpha" />
     <PackageReference Include="Spectre.Console" Version="0.49.1" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.49.1" />
   </ItemGroup>

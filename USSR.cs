@@ -1,7 +1,6 @@
 ﻿using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using Kiraio.UnityWebTools;
-using NativeFileDialogSharp;
 using Spectre.Console;
 using USSR.Enums;
 using USSR.Utilities;
@@ -18,14 +17,19 @@ namespace USSR.Core
         {
             Console.Title = $"Unity Splash Screen Remover v{appVersion}";
             AnsiConsole.Background = Color.Grey11;
-
+            PrintHelp();
             while (true)
             {
                 string? ussrExec = Path.GetDirectoryName(AppContext.BaseDirectory);
-                string? selectedFile = args[0];
+                if (args.Length !=2)Environment.Exit(1);
+                string action = args[0];
+                string selectedFile = args[1];
 
-                if (selectedFile == null)
-                    continue; // Prompt for action again
+                if (!File.Exists(selectedFile))
+                {
+                    AnsiConsole.MarkupLine("[red]( ERR! )[/] file not found!");
+                    Environment.Exit(1);
+                }
 
                 AnsiConsole.MarkupLineInterpolated(
                     $"( INFO ) Selected file: [green]{selectedFile}[/]"
@@ -50,13 +54,13 @@ namespace USSR.Core
                 {
                     AnsiConsole.MarkupLine("[red]( ERR! )[/] Unknown/Unsupported file type!");
                     Console.WriteLine();
-                    continue; // Prompt for action again
+                    Environment.Exit(1);
                 }
 
                 AssetsManager assetsManager = new();
                 string? tpkFile = Path.Combine(ussrExec ?? string.Empty, ASSET_CLASS_DB);
                 if (!LoadClassPackage(assetsManager, tpkFile))
-                    continue; // Prompt for action again
+                    Environment.Exit(1);
 
                 List<string> temporaryFiles = new();
                 string inspectedFile = selectedFile;
@@ -113,14 +117,25 @@ namespace USSR.Core
                             $"( INFO ) Unity Version: [bold green]{assetFileInstance.file.Metadata.UnityVersion}[/]"
                         );
 
-                        assetFileInstance.file = RemoveSplashScreen(
-                            assetsManager,
-                            assetFileInstance
-                        );
+                        if (action == "watermark")
+                        {
+                            assetFileInstance.file = RemoveWatermark(
+                                assetsManager,
+                                assetFileInstance
+                            );
+                        }
+                        else // action == "splash"
+                        {
+                            assetFileInstance.file = RemoveSplashScreen(
+                                assetsManager,
+                                assetFileInstance
+                            );
+                        }
 
                         if (assetFileInstance.file != null)
                         {
-                            Utility.BackupOnlyOnce(selectedFile);
+                            //不备份了
+                            // Utility.BackupOnlyOnce(selectedFile);
                             WriteChanges(
                                 inspectedFile,
                                 assetType,
@@ -134,7 +149,7 @@ namespace USSR.Core
                         AnsiConsole.MarkupLineInterpolated(
                             $"[red]( ERR! )[/] Error when loading asset class types database! {ex.Message}"
                         );
-                        continue; // Prompt for action again
+                        Environment.Exit(1);
                     }
                 }
 
@@ -313,16 +328,11 @@ namespace USSR.Core
             );
             Console.WriteLine();
             AnsiConsole.MarkupLine(
-                "USSR is a tool to easily remove Unity splash screen. USSR didn't directly \"hack\" the Unity Editor, but the generated build."
+                "Usage: USSR.exe <splash|watermark> <file>"
             );
             Console.WriteLine();
             AnsiConsole.MarkupLine(
-                "Before using USSR, make sure you have set the splash screen [bold green]Draw Mode[/] in [bold green]Player Settings[/] to [bold green]All Sequential[/] and backup the target file below! For more information, visit USSR GitHub repo: [link]https://github.com/kiraio-moe/USSR[/]"
-            );
-            Console.WriteLine();
-            AnsiConsole.MarkupLine("[bold green]HOW TO USE[/]");
-            AnsiConsole.MarkupLine(
-                "Select the action below, find and select one of these files in your game data:"
+                "Find and select one of these files in your game data:"
             );
             AnsiConsole.MarkupLine(
                 "[green]globalgamemanagers[/] | [green]data.unity3d[/] | [green]*.data[/] | [green]*.data.br[/] | [green]*.data.gz[/] | [green]*.data.unityweb[/]"
@@ -367,33 +377,6 @@ namespace USSR.Core
                 1 => WebCompressionTypes.GZip,
                 _ => WebCompressionTypes.None,
             };
-        }
-
-        /// <summary>
-        /// Open file picker dialog.
-        /// </summary>
-        /// <returns>Selected file path.</returns>
-        static string OpenFilePicker()
-        {
-            AnsiConsole.MarkupLine("Opening File Picker...");
-
-            DialogResult filePicker = Dialog.FileOpen(
-                null,
-                Path.GetDirectoryName(Utility.GetLastOpenedFile())
-            );
-
-            if (filePicker.IsCancelled)
-                AnsiConsole.MarkupLine("( INFO ) Cancelled.");
-            else if (filePicker.IsError)
-            {
-                AnsiConsole.MarkupLine(
-                    "[red]( ERR! )[/] Unable to open File Picker! Try using a different Terminal?"
-                );
-            }
-
-            Console.WriteLine();
-
-            return filePicker.Path;
         }
 
         /// <summary>
@@ -647,7 +630,7 @@ namespace USSR.Core
                     );
                 }
 
-                AnsiConsole.Markup("Which splash screen you want to remove? ");
+                // AnsiConsole.Markup("Which splash screen you want to remove? ");
 
             InputLogoIndex:
                 string? logoIndex = "1";
